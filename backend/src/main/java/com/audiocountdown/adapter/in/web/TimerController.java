@@ -46,6 +46,13 @@ public class TimerController {
     @PostMapping("/timer/pause") public TimerSnapshot pause() { return timerService.pause(); }
     @PostMapping("/timer/resume") public TimerSnapshot resume() { return timerService.resume(); }
     @PostMapping("/timer/reset") public TimerSnapshot reset() { return timerService.reset(); }
+
+    @PatchMapping("/timer/track")
+    public TimerSnapshot selectTrack(@Valid @RequestBody SelectTrackRequest request) {
+        if (trackStorage.find(request.trackId()) == null) throw new IllegalArgumentException("Select a valid audio track.");
+        return timerService.selectTrack(request.trackId());
+    }
+
     @GetMapping(value = "/timer/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter events() { return eventPublisher.subscribe(); }
 
@@ -86,5 +93,7 @@ public class TimerController {
             String trackId) { }
 
     public record RenameTrackRequest(@NotBlank @Size(max = 200) String fileName) { }
+
+    public record SelectTrackRequest(@NotBlank String trackId) { }
 
 }

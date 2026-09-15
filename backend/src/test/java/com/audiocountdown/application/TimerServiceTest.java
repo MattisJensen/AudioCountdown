@@ -46,4 +46,16 @@ class TimerServiceTest {
 
         assertThat(service.snapshot().selectedTrackId()).isNull();
     }
+
+    @Test
+    void changesTheTrackWithoutRestartingTheCountdown() {
+        var started = service.start(15, 15, "first-track");
+
+        var updated = service.selectTrack("next-track");
+
+        assertThat(updated.status()).isEqualTo(TimerStatus.RUNNING);
+        assertThat(updated.startingMinutes()).isEqualTo(started.startingMinutes());
+        assertThat(updated.completesAt()).isEqualTo(started.completesAt());
+        assertThat(updated.selectedTrackId()).isEqualTo("next-track");
+    }
 }

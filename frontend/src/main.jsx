@@ -93,6 +93,21 @@ function App() {
     try { setState(await request(path, { method: 'POST' })) } catch (err) { setError(err.message) }
   }
 
+  const changeSelectedTrack = async (nextTrackId) => {
+    const previousTrackId = selectedTrack
+    setSelectedTrack(nextTrackId)
+    setRenaming(false)
+    setConfirmingDelete(false)
+    if (state.status === 'IDLE' || !nextTrackId) return
+    setError('')
+    try {
+      setState(await request('/timer/track', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trackId: nextTrackId }) }))
+    } catch (err) {
+      setSelectedTrack(previousTrackId)
+      setError(err.message)
+    }
+  }
+
   const start = async () => {
     setError('')
     try {
@@ -115,7 +130,8 @@ function App() {
     try {
       const form = new FormData(); form.append('file', file)
       const track = await request('/tracks', { method: 'POST', body: form })
-      setTracks(current => [...current, track]); setSelectedTrack(track.id)
+      setTracks(current => [...current, track])
+      await changeSelectedTrack(track.id)
     } catch (err) { setError(err.message) } finally { setUploading(false); event.target.value = '' }
   }
 
@@ -194,7 +210,8 @@ function App() {
           <div className="card-label">INTERVAL RANGE</div>
           <div className="range-row"><label>From<input type="number" min="1" max="1440" value={minimum} onChange={e => setMinimum(e.target.value)} disabled={running || paused}/><small>minutes</small></label><span className="to">to</span><label>Until<input type="number" min="1" max="1440" value={maximum} onChange={e => setMaximum(e.target.value)} disabled={running || paused}/><small>minutes</small></label></div>
           <div className="card-label track-label">SOUNDTRACK</div>
-          <label className="select-wrap"><select value={selectedTrack} onChange={event => { setSelectedTrack(event.target.value); setRenaming(false); setConfirmingDelete(false) }} disabled={running || paused}><option value="">Select an audio track</option>{tracks.map(track => <option key={track.id} value={track.id}>{track.fileName}</option>)}</select></label>
+          <label className="select-wrap"><select value={selectedTrack} onChange={event => changeSelectedTrack(event.target.value)}><option value="" disabled={running || paused}>Select an audio track</option>{tracks.map(track => <option key={track.id} value={track.id}>{track.fileName}</option>)}</select></label>
+          {selectedTrackDetails && <div className="selected-track-note"><span></span>Plays at the next zero: {selectedTrackDetails.fileName}</div>}
           {!renaming && <div className="track-actions"><button className="track-action" onClick={beginRename} disabled={!selectedTrack}>Rename</button><button className="track-action danger" onClick={() => setConfirmingDelete(true)} disabled={!selectedTrack || running || paused}>Delete</button></div>}
           {renaming && <form className="track-edit" onSubmit={renameTrack}><input value={renameValue} onChange={event => setRenameValue(event.target.value)} maxLength="200" aria-label="Audio track name" autoFocus/><div><button className="small-primary" type="submit" disabled={!renameValue.trim()}>Save</button><button className="small-secondary" type="button" onClick={() => setRenaming(false)}>Cancel</button></div></form>}
           {confirmingDelete && <div className="delete-confirm"><span>Delete “{selectedTrackDetails?.fileName}”?</span><div><button className="small-danger" onClick={deleteTrack}>Delete</button><button className="small-secondary" onClick={() => setConfirmingDelete(false)}>Cancel</button></div></div>}
