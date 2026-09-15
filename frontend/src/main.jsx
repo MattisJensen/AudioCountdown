@@ -4,6 +4,12 @@ import './styles.css'
 
 const API = import.meta.env.VITE_API_URL || '/api'
 
+function formatTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
+  const minutes = Math.floor(seconds / 60)
+  return `${minutes}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`
+}
+
 async function request(path, options = {}) {
   const response = await fetch(`${API}${path}`, options)
   const body = await response.json().catch(() => ({}))
@@ -19,6 +25,10 @@ function App() {
   const [state, setState] = useState({ status: 'IDLE' })
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [playingTrackId, setPlayingTrackId] = useState('')
+  const [audioPlaying, setAudioPlaying] = useState(false)
+  const [audioTime, setAudioTime] = useState(0)
+  const [audioDuration, setAudioDuration] = useState(0)
   const audio = useRef(new Audio())
 
   const loadTracks = async () => {
@@ -40,16 +50,39 @@ function App() {
   useEffect(() => {
     loadTracks()
     loadState()
+    const player = audio.current
+    const updateTime = () => setAudioTime(player.currentTime)
+    const updateDuration = () => setAudioDuration(Number.isFinite(player.duration) ? player.duration : 0)
+    const markPlaying = () => setAudioPlaying(true)
+    const markPaused = () => setAudioPlaying(false)
+    player.addEventListener('timeupdate', updateTime)
+    player.addEventListener('loadedmetadata', updateDuration)
+    player.addEventListener('durationchange', updateDuration)
+    player.addEventListener('play', markPlaying)
+    player.addEventListener('pause', markPaused)
+    player.addEventListener('ended', markPaused)
     const events = new EventSource(`${API}/timer/events`)
     events.addEventListener('play-track', (event) => {
       if (event.data) {
-        audio.current.src = `${API}/tracks/${event.data}/content`
-        audio.current.play().catch(() => setError('The browser blocked audio playback. Press Start once to allow audio.'))
+        setPlayingTrackId(event.data)
+        setAudioTime(0)
+        setAudioDuration(0)
+        player.src = `${API}/tracks/${event.data}/content`
+        player.play().catch(() => setError('The browser blocked audio playback. Use the player to start the audio.'))
       }
       loadState()
     })
     const refresh = setInterval(loadState, 5000)
-    return () => { events.close(); clearInterval(refresh) }
+    return () => {
+      events.close()
+      clearInterval(refresh)
+      player.removeEventListener('timeupdate', updateTime)
+      player.removeEventListener('loadedmetadata', updateDuration)
+      player.removeEventListener('durationchange', updateDuration)
+      player.removeEventListener('play', markPlaying)
+      player.removeEventListener('pause', markPaused)
+      player.removeEventListener('ended', markPaused)
+    }
   }, [])
 
   const action = async (path) => {
@@ -83,12 +116,27 @@ function App() {
     } catch (err) { setError(err.message) } finally { setUploading(false); event.target.value = '' }
   }
 
+  const toggleAudio = () => {
+    if (audioPlaying) {
+      audio.current.pause()
+      return
+    }
+    if (audioDuration && audio.current.currentTime >= audioDuration) audio.current.currentTime = 0
+    audio.current.play().catch(() => setError('The browser blocked audio playback. Please try again.'))
+  }
+
+  const seekAudio = (event) => {
+    const nextTime = Number(event.target.value)
+    audio.current.currentTime = nextTime
+    setAudioTime(nextTime)
+  }
+
   const running = state.status === 'RUNNING'
   const paused = state.status === 'PAUSED'
+  const playingTrack = tracks.find(track => track.id === playingTrackId)
   return <main>
     <section className="shell">
       <div className="brand"><span className="brand-mark">◷</span><span>Audio Countdown</span></div>
-      <div className="hero"><p className="eyebrow">FOCUS RHYTHM</p><h1>Let time do the talking.</h1><p className="subhead">Set a quiet, random interval. Your selected sound will play when the countdown reaches zero.</p></div>
       <div className="grid">
         <section className="card timer-card">
           <div className="card-label">CURRENT COUNTDOWN</div>
@@ -109,6 +157,14 @@ function App() {
           <label className="upload"><span>{uploading ? 'Uploading…' : '+ Add another track'}</span><input type="file" accept="audio/mpeg,audio/wav,audio/mp4,audio/ogg,audio/aac,audio/flac,.mp3,.wav,.m4a,.ogg,.aac,.flac" onChange={upload} disabled={uploading}/></label>
         </section>
       </div>
+      {playingTrackId && <section className="card audio-player">
+        <button className="player-toggle" onClick={toggleAudio} aria-label={audioPlaying ? 'Pause audio' : 'Continue audio'}>{audioPlaying ? 'Ⅱ' : '▶'}</button>
+        <div className="player-main">
+          <div className="player-heading"><div><span>{audioPlaying ? 'NOW PLAYING' : 'AUDIO PAUSED'}</span><strong>{playingTrack?.fileName || 'Audio track'}</strong></div><time>{formatTime(audioTime)} / {formatTime(audioDuration)}</time></div>
+          <input className="player-progress" type="range" min="0" max={audioDuration || 0} step="0.1" value={Math.min(audioTime, audioDuration || 0)} onChange={seekAudio} aria-label="Audio position" disabled={!audioDuration}/>
+        </div>
+        <div className="timer-independent">Timer continues independently</div>
+      </section>}
       {error && <div className="error">{error}</div>}
       <footer>Audio plays through your browser’s default system output.</footer>
     </section>
