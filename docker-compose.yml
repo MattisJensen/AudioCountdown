@@ -1,0 +1,17 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      AUDIO_STORAGE_DIRECTORY: /data/audio
+    volumes:
+      - audio-data:/data/audio
+    ports:
+      - "8080:8080"
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+volumes:
+  audio-data:
