@@ -36,4 +36,14 @@ class TimerServiceTest {
         assertThatThrownBy(() -> service.start(80, 15, "track"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void clearsADeletedSelectedTrackWhileIdle() {
+        service.start(15, 15, "deleted-track");
+        service.reset();
+
+        service.clearTrackIfSelected("deleted-track");
+
+        assertThat(service.snapshot().selectedTrackId()).isNull();
+    }
 }

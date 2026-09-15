@@ -31,6 +31,7 @@ function App() {
   const [audioDuration, setAudioDuration] = useState(0)
   const [renaming, setRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const audio = useRef(new Audio())
 
   const loadTracks = async () => {
@@ -138,6 +139,7 @@ function App() {
     if (!track) return
     setRenameValue(track.fileName)
     setRenaming(true)
+    setConfirmingDelete(false)
   }
 
   const renameTrack = async (event) => {
@@ -150,9 +152,29 @@ function App() {
     } catch (err) { setError(err.message) }
   }
 
+  const deleteTrack = async () => {
+    setError('')
+    try {
+      await request(`/tracks/${selectedTrack}`, { method: 'DELETE' })
+      const remaining = tracks.filter(track => track.id !== selectedTrack)
+      if (playingTrackId === selectedTrack) {
+        audio.current.pause()
+        audio.current.removeAttribute('src')
+        setPlayingTrackId('')
+        setAudioTime(0)
+        setAudioDuration(0)
+      }
+      setTracks(remaining)
+      setSelectedTrack(remaining[0]?.id || '')
+      setConfirmingDelete(false)
+      setRenaming(false)
+    } catch (err) { setError(err.message) }
+  }
+
   const running = state.status === 'RUNNING'
   const paused = state.status === 'PAUSED'
   const playingTrack = tracks.find(track => track.id === playingTrackId)
+  const selectedTrackDetails = tracks.find(track => track.id === selectedTrack)
   return <main>
     <section className="shell">
       <div className="brand"><span className="brand-mark">◷</span><span>Audio Countdown</span></div>
@@ -172,9 +194,10 @@ function App() {
           <div className="card-label">INTERVAL RANGE</div>
           <div className="range-row"><label>From<input type="number" min="1" max="1440" value={minimum} onChange={e => setMinimum(e.target.value)} disabled={running || paused}/><small>minutes</small></label><span className="to">to</span><label>Until<input type="number" min="1" max="1440" value={maximum} onChange={e => setMaximum(e.target.value)} disabled={running || paused}/><small>minutes</small></label></div>
           <div className="card-label track-label">SOUNDTRACK</div>
-          <label className="select-wrap"><select value={selectedTrack} onChange={event => { setSelectedTrack(event.target.value); setRenaming(false) }} disabled={running || paused}><option value="">Select an audio track</option>{tracks.map(track => <option key={track.id} value={track.id}>{track.fileName}</option>)}</select></label>
-          {!renaming && <div className="track-actions"><button className="track-action" onClick={beginRename} disabled={!selectedTrack}>Rename</button></div>}
+          <label className="select-wrap"><select value={selectedTrack} onChange={event => { setSelectedTrack(event.target.value); setRenaming(false); setConfirmingDelete(false) }} disabled={running || paused}><option value="">Select an audio track</option>{tracks.map(track => <option key={track.id} value={track.id}>{track.fileName}</option>)}</select></label>
+          {!renaming && <div className="track-actions"><button className="track-action" onClick={beginRename} disabled={!selectedTrack}>Rename</button><button className="track-action danger" onClick={() => setConfirmingDelete(true)} disabled={!selectedTrack || running || paused}>Delete</button></div>}
           {renaming && <form className="track-edit" onSubmit={renameTrack}><input value={renameValue} onChange={event => setRenameValue(event.target.value)} maxLength="200" aria-label="Audio track name" autoFocus/><div><button className="small-primary" type="submit" disabled={!renameValue.trim()}>Save</button><button className="small-secondary" type="button" onClick={() => setRenaming(false)}>Cancel</button></div></form>}
+          {confirmingDelete && <div className="delete-confirm"><span>Delete “{selectedTrackDetails?.fileName}”?</span><div><button className="small-danger" onClick={deleteTrack}>Delete</button><button className="small-secondary" onClick={() => setConfirmingDelete(false)}>Cancel</button></div></div>}
           <label className="upload"><span>{uploading ? 'Uploading…' : '+ Add another track'}</span><input type="file" accept="audio/mpeg,audio/wav,audio/mp4,audio/ogg,audio/aac,audio/flac,.mp3,.wav,.m4a,.ogg,.aac,.flac" onChange={upload} disabled={uploading}/></label>
         </section>
       </div>

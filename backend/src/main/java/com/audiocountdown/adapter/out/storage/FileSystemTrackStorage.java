@@ -108,6 +108,14 @@ public class FileSystemTrackStorage implements TrackStorage {
         return renamed;
     }
 
+    @Override
+    public synchronized void delete(String id) throws IOException {
+        Track track = find(id);
+        if (track == null) throw new NoSuchElementException("Audio track not found.");
+        Files.deleteIfExists(contentPath(track.id(), extensionOf(track.fileName())));
+        Files.deleteIfExists(metadataPath(track.id()));
+    }
+
     private Track readMetadata(Path metadata) {
         if (!Files.isRegularFile(metadata)) return null;
         Properties properties = new Properties();

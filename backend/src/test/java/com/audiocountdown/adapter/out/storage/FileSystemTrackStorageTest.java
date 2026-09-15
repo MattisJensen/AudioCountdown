@@ -50,6 +50,17 @@ class FileSystemTrackStorageTest {
         assertThat(storage.open(first.id())).hasBinaryContent(new byte[]{1, 2, 3});
     }
 
+    @Test
+    void deletesTrackContentAndMetadata() throws Exception {
+        var storage = new FileSystemTrackStorage(directory.toString(), 20 * 1024 * 1024);
+        var track = storage.save(audio("remove.mp3"));
+
+        storage.delete(track.id());
+
+        assertThat(storage.find(track.id())).isNull();
+        assertThat(storage.findAll()).isEmpty();
+    }
+
     private MockMultipartFile audio(String fileName) {
         return new MockMultipartFile("file", fileName, "audio/mpeg", new byte[]{1, 2, 3});
     }

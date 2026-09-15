@@ -13,4 +13,5 @@ public interface TrackStorage {
     InputStream open(String id) throws IOException;
     Track find(String id);
     Track rename(String id, String fileName) throws IOException;
+    void delete(String id) throws IOException;
 }

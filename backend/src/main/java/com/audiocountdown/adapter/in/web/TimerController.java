@@ -59,6 +59,18 @@ public class TimerController {
         return trackStorage.rename(id, request.fileName());
     }
 
+    @DeleteMapping("/tracks/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) throws IOException {
+        TimerSnapshot snapshot = timerService.snapshot();
+        if (snapshot.status() != com.audiocountdown.domain.TimerStatus.IDLE
+                && id.equals(snapshot.selectedTrackId())) {
+            throw new TrackInUseException();
+        }
+        trackStorage.delete(id);
+        timerService.clearTrackIfSelected(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/tracks/{id}/content")
     public ResponseEntity<InputStreamResource> content(@PathVariable String id) throws IOException {
         Track track = trackStorage.find(id);

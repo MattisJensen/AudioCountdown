@@ -71,6 +71,10 @@ public class TimerService {
         return snapshot();
     }
 
+    public synchronized void clearTrackIfSelected(String trackId) {
+        if (java.util.Objects.equals(selectedTrackId, trackId)) selectedTrackId = null;
+    }
+
     public synchronized TimerSnapshot snapshot() {
         long secondsLeft = status == TimerStatus.RUNNING
                 ? Math.max(0, Duration.between(Instant.now(), completesAt).getSeconds())

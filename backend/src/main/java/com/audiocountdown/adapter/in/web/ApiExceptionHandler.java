@@ -29,4 +29,10 @@ public class ApiExceptionHandler {
         return Map.of("message", error.getMessage());
     }
 
+    @ExceptionHandler(TrackInUseException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> trackInUse(TrackInUseException error) {
+        return Map.of("message", error.getMessage());
+    }
+
 }
