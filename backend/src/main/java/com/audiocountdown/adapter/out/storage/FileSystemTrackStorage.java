@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -88,6 +89,23 @@ public class FileSystemTrackStorage implements TrackStorage {
     public Track find(String id) {
         if (!isUuid(id)) return null;
         return readMetadata(metadataPath(id));
+    }
+
+    @Override
+    public synchronized Track rename(String id, String requestedName) throws IOException {
+        Track current = find(id);
+        if (current == null) throw new NoSuchElementException("Audio track not found.");
+        String currentExtension = extensionOf(current.fileName());
+        String normalizedName = normalizedFileName(requestedName);
+        if (extensionOf(normalizedName).isBlank()) normalizedName += "." + currentExtension;
+        if (!extensionOf(normalizedName).equals(currentExtension)) {
+            throw new IllegalArgumentException("Renaming cannot change the audio file format.");
+        }
+        List<Track> otherTracks = findAll().stream().filter(track -> !track.id().equals(id)).toList();
+        String displayName = nextAvailableName(normalizedName, otherTracks);
+        Track renamed = new Track(current.id(), displayName, current.contentType(), current.size());
+        writeMetadata(renamed);
+        return renamed;
     }
 
     private Track readMetadata(Path metadata) {

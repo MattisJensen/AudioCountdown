@@ -37,6 +37,19 @@ class FileSystemTrackStorageTest {
         assertThat(track.fileName()).isEqualTo("track.mp3");
     }
 
+    @Test
+    void renamesTracksWithoutChangingTheirFormatAndNumbersDuplicates() throws Exception {
+        var storage = new FileSystemTrackStorage(directory.toString(), 20 * 1024 * 1024);
+        var first = storage.save(audio("first.mp3"));
+        var second = storage.save(audio("second.mp3"));
+
+        var renamed = storage.rename(second.id(), "first.mp3");
+
+        assertThat(renamed.fileName()).isEqualTo("first 1.mp3");
+        assertThat(storage.find(second.id()).fileName()).isEqualTo("first 1.mp3");
+        assertThat(storage.open(first.id())).hasBinaryContent(new byte[]{1, 2, 3});
+    }
+
     private MockMultipartFile audio(String fileName) {
         return new MockMultipartFile("file", fileName, "audio/mpeg", new byte[]{1, 2, 3});
     }

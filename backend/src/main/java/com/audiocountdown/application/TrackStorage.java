@@ -12,4 +12,5 @@ public interface TrackStorage {
     List<Track> findAll();
     InputStream open(String id) throws IOException;
     Track find(String id);
+    Track rename(String id, String fileName) throws IOException;
 }

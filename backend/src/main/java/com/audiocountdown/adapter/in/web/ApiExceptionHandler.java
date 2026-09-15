@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -21,4 +22,11 @@ public class ApiExceptionHandler {
     public Map<String, String> uploadTooLarge() {
         return Map.of("message", "The audio file is too large. The maximum size is 20 MB.");
     }
+
+    @ExceptionHandler(NoSuchElementException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> notFound(NoSuchElementException error) {
+        return Map.of("message", error.getMessage());
+    }
+
 }

@@ -8,6 +8,8 @@ import com.audiocountdown.domain.Track;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -52,6 +54,11 @@ public class TimerController {
     @PostMapping(value = "/tracks", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Track upload(@RequestPart("file") MultipartFile file) throws IOException { return trackStorage.save(file); }
 
+    @PatchMapping("/tracks/{id}")
+    public Track rename(@PathVariable String id, @Valid @RequestBody RenameTrackRequest request) throws IOException {
+        return trackStorage.rename(id, request.fileName());
+    }
+
     @GetMapping("/tracks/{id}/content")
     public ResponseEntity<InputStreamResource> content(@PathVariable String id) throws IOException {
         Track track = trackStorage.find(id);
@@ -65,4 +72,7 @@ public class TimerController {
             @Min(1) @Max(1440) int minimumMinutes,
             @Min(1) @Max(1440) int maximumMinutes,
             String trackId) { }
+
+    public record RenameTrackRequest(@NotBlank @Size(max = 200) String fileName) { }
+
 }
