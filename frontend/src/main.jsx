@@ -67,6 +67,8 @@ function App() {
     const events = new EventSource(`${API}/timer/events`)
     events.addEventListener('play-track', (event) => {
       if (event.data) {
+        player.pause()
+        player.currentTime = 0
         setPlayingTrackId(event.data)
         setAudioTime(0)
         setAudioDuration(0)
@@ -112,9 +114,6 @@ function App() {
     setError('')
     try {
       setState(await request('/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ minimumMinutes: Number(minimum), maximumMinutes: Number(maximum), trackId: selectedTrack }) }))
-      audio.current.src = `${API}/tracks/${selectedTrack}/content`
-      audio.current.muted = true
-      audio.current.play().then(() => { audio.current.pause(); audio.current.currentTime = 0; audio.current.muted = false }).catch(() => { audio.current.muted = false })
     } catch (err) { setError(err.message) }
   }
 
