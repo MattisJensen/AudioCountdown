@@ -7,7 +7,7 @@ const API = import.meta.env.VITE_API_URL || '/api'
 async function request(path, options = {}) {
   const response = await fetch(`${API}${path}`, options)
   const body = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(response.status === 413 ? 'The audio file is too large. The maximum size is 20 MB.' : body.message || 'Something went wrong.')
+  if (!response.ok) throw new Error(response.status === 413 ? 'The audio file is too large. The maximum size is 20 MB.' : body.message || `Request failed with status ${response.status}.`)
   return body
 }
 
@@ -70,6 +70,11 @@ function App() {
   const upload = async (event) => {
     const file = event.target.files?.[0]
     if (!file) return
+    if (file.size > 20 * 1024 * 1024) {
+      setError('The audio file is too large. The maximum size is 20 MB.')
+      event.target.value = ''
+      return
+    }
     setUploading(true); setError('')
     try {
       const form = new FormData(); form.append('file', file)
