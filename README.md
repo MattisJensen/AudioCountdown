@@ -10,7 +10,7 @@ docker compose up --build
 
 Open [http://localhost:3000](http://localhost:3000). Uploaded audio files are kept in the `audio-data` Docker volume.
 
-Supported formats: MP3, WAV, M4A, OGG, AAC, and FLAC. The range uses inclusive whole minutes. When a countdown completes, the browser plays the selected track and immediately starts a new random countdown.
+Supported formats: MP3, WAV, M4A, OGG, AAC, and FLAC. Audio uploads are limited to 20 MB. The range uses inclusive whole minutes. When a countdown completes, the browser plays the selected track and immediately starts a new random countdown.
 
 ## Local development
 

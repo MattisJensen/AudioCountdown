@@ -7,7 +7,7 @@ const API = import.meta.env.VITE_API_URL || '/api'
 async function request(path, options = {}) {
   const response = await fetch(`${API}${path}`, options)
   const body = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(body.message || 'Something went wrong.')
+  if (!response.ok) throw new Error(response.status === 413 ? 'The audio file is too large. The maximum size is 20 MB.' : body.message || 'Something went wrong.')
   return body
 }
 
@@ -21,26 +21,34 @@ function App() {
   const [uploading, setUploading] = useState(false)
   const audio = useRef(new Audio())
 
-  const load = async () => {
+  const loadTracks = async () => {
     try {
-      const [nextTracks, nextState] = await Promise.all([request('/tracks'), request('/state')])
+      const nextTracks = await request('/tracks')
       setTracks(nextTracks)
+      setSelectedTrack(current => current || nextTracks[0]?.id || '')
+    } catch (err) { setError(err.message) }
+  }
+
+  const loadState = async () => {
+    try {
+      const nextState = await request('/state')
       setState(nextState)
-      setSelectedTrack(nextState.selectedTrackId || nextTracks[0]?.id || '')
+      setSelectedTrack(current => nextState.selectedTrackId || current)
     } catch (err) { setError(err.message) }
   }
 
   useEffect(() => {
-    load()
+    loadTracks()
+    loadState()
     const events = new EventSource(`${API}/timer/events`)
     events.addEventListener('play-track', (event) => {
       if (event.data) {
         audio.current.src = `${API}/tracks/${event.data}/content`
         audio.current.play().catch(() => setError('The browser blocked audio playback. Press Start once to allow audio.'))
       }
-      load()
+      loadState()
     })
-    const refresh = setInterval(load, 5000)
+    const refresh = setInterval(loadState, 5000)
     return () => { events.close(); clearInterval(refresh) }
   }, [])
 

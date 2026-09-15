@@ -34,7 +34,7 @@ public class FileSystemTrackStorage implements TrackStorage {
     @Override
     public Track save(MultipartFile file) throws IOException {
         if (file.isEmpty() || file.getSize() > maxFileSize) {
-            throw new IllegalArgumentException("The audio file must be non-empty and no larger than 100 MB.");
+            throw new IllegalArgumentException("The audio file must be non-empty and no larger than 20 MB.");
         }
         String originalName = file.getOriginalFilename() == null ? "track" : file.getOriginalFilename();
         String extension = extensionOf(originalName);
