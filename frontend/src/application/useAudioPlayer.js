@@ -1,19 +1,36 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { trackContentUrl } from './api.js'
 
+const VOLUME_STORAGE_KEY = 'audio-countdown-player-volume'
+
+function storedVolume() {
+  try {
+    const savedVolume = localStorage.getItem(VOLUME_STORAGE_KEY)
+    if (savedVolume === null) return 1
+    const volume = Number(savedVolume)
+    return Number.isFinite(volume) && volume >= 0 && volume <= 1 ? volume : 1
+  } catch (_) {
+    return 1
+  }
+}
+
 export function useAudioPlayer(onError, onEnded) {
+  const initialVolume = useRef(null)
+  if (initialVolume.current === null) initialVolume.current = storedVolume()
   const playerRef = useRef(null)
   const onEndedRef = useRef(onEnded)
   onEndedRef.current = onEnded
   if (playerRef.current === null) {
     playerRef.current = new Audio()
     playerRef.current.preload = 'metadata'
+    playerRef.current.volume = initialVolume.current
   }
 
   const [trackId, setTrackId] = useState('')
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [volume, setVolumeState] = useState(initialVolume.current)
 
   useEffect(() => {
     const player = playerRef.current
@@ -100,6 +117,13 @@ export function useAudioPlayer(onError, onEnded) {
     setCurrentTime(boundedTime)
   }, [])
 
+  const setVolume = useCallback((nextVolume) => {
+    const boundedVolume = Math.min(1, Math.max(0, Number(nextVolume)))
+    playerRef.current.volume = boundedVolume
+    setVolumeState(boundedVolume)
+    try { localStorage.setItem(VOLUME_STORAGE_KEY, String(boundedVolume)) } catch (_) {}
+  }, [])
+
   const clear = useCallback((clearedTrackId) => {
     const player = playerRef.current
     if (player.dataset.trackId !== clearedTrackId) return
@@ -112,5 +136,5 @@ export function useAudioPlayer(onError, onEnded) {
     setDuration(0)
   }, [])
 
-  return { trackId, isPlaying, currentTime, duration, prime, playTrack, toggle, seek, clear }
+  return { trackId, isPlaying, currentTime, duration, volume, prime, playTrack, toggle, seek, setVolume, clear }
 }

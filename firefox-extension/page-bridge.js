@@ -1,6 +1,6 @@
 const PAGE_MESSAGE_SOURCE = 'audio-countdown-page'
 const EXTENSION_MESSAGE_SOURCE = 'audio-countdown-extension'
-const COMMANDS = new Set(['pause', 'resume', 'status'])
+const COMMANDS = new Set(['pause', 'resume', 'set-volume', 'status'])
 
 window.addEventListener('message', async event => {
   if (event.source !== window
@@ -16,6 +16,7 @@ window.addEventListener('message', async event => {
     response = await browser.runtime.sendMessage({
       type: 'audio-countdown-command',
       command: event.data.command,
+      volume: event.data.volume,
     })
   } catch (_) {
     response = { ok: false }

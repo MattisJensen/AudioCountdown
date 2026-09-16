@@ -9,9 +9,10 @@ export function useExternalMediaControl() {
   const [availability, setAvailability] = useState('checking')
   const [providerTabCount, setProviderTabCount] = useState(0)
   const [resumableCount, setResumableCount] = useState(0)
+  const [volume, setVolumeState] = useState(1)
   const [busy, setBusy] = useState(false)
   const pendingRequests = useRef(new Map())
-  const scheduledResume = useRef(null)
+  const pendingVolumeUpdate = useRef(null)
   const nextRequestId = useRef(1)
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export function useExternalMediaControl() {
     }
   }, [])
 
-  const sendCommand = useCallback((command, timeoutMs = RESPONSE_TIMEOUT_MS) => new Promise(resolve => {
+  const sendCommand = useCallback((command, details = {}, timeoutMs = RESPONSE_TIMEOUT_MS) => new Promise(resolve => {
     const requestId = `${Date.now()}-${nextRequestId.current++}`
     const timeout = window.setTimeout(() => {
       pendingRequests.current.delete(requestId)
@@ -54,6 +55,7 @@ export function useExternalMediaControl() {
       source: PAGE_MESSAGE_SOURCE,
       requestId,
       command,
+      ...details,
     }, window.location.origin)
   }), [])
 
@@ -62,29 +64,22 @@ export function useExternalMediaControl() {
     setAvailability('available')
     setProviderTabCount(response.providerTabCount)
     setResumableCount(response.resumableCount)
+    if (Number.isFinite(response.volume)) setVolumeState(response.volume)
     return true
   }, [])
 
-  const cancelScheduledResume = useCallback(() => {
-    if (scheduledResume.current === null) return
-    window.clearTimeout(scheduledResume.current)
-    scheduledResume.current = null
-  }, [])
-
   const pause = useCallback(async () => {
-    cancelScheduledResume()
     setBusy(true)
     try {
-      const response = await sendCommand('pause', PAUSE_TIMEOUT_MS)
+      const response = await sendCommand('pause', {}, PAUSE_TIMEOUT_MS)
       updateState(response)
       return response
     } finally {
       setBusy(false)
     }
-  }, [cancelScheduledResume, sendCommand, updateState])
+  }, [sendCommand, updateState])
 
   const resume = useCallback(async () => {
-    cancelScheduledResume()
     setBusy(true)
     try {
       const response = await sendCommand('resume')
@@ -93,34 +88,38 @@ export function useExternalMediaControl() {
     } finally {
       setBusy(false)
     }
-  }, [cancelScheduledResume, sendCommand, updateState])
+  }, [sendCommand, updateState])
 
-  const resumeAfter = useCallback(delayMs => {
-    cancelScheduledResume()
-    scheduledResume.current = window.setTimeout(() => {
-      scheduledResume.current = null
-      void resume()
-    }, delayMs)
-  }, [cancelScheduledResume, resume])
+  const setVolume = useCallback((nextVolume) => {
+    const boundedVolume = Math.min(1, Math.max(0, Number(nextVolume)))
+    setVolumeState(boundedVolume)
+    if (pendingVolumeUpdate.current !== null) window.clearTimeout(pendingVolumeUpdate.current)
+    pendingVolumeUpdate.current = window.setTimeout(async () => {
+      pendingVolumeUpdate.current = null
+      const response = await sendCommand('set-volume', { volume: boundedVolume })
+      updateState(response)
+    }, 60)
+  }, [sendCommand, updateState])
 
   useEffect(() => {
     let active = true
-    sendCommand('status', PAUSE_TIMEOUT_MS).then(response => {
+    sendCommand('status', {}, PAUSE_TIMEOUT_MS).then(response => {
       if (active) updateState(response)
     })
     return () => {
       active = false
-      cancelScheduledResume()
+      if (pendingVolumeUpdate.current !== null) window.clearTimeout(pendingVolumeUpdate.current)
     }
-  }, [cancelScheduledResume, sendCommand, updateState])
+  }, [sendCommand, updateState])
 
   return {
     availability,
     providerTabCount,
     resumableCount,
+    volume,
     busy,
     pause,
     resume,
-    resumeAfter,
+    setVolume,
   }
 }

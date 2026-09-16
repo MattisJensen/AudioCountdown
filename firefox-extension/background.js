@@ -5,7 +5,7 @@ const PROVIDER_URLS = [
   'https://soundcloud.com/*',
 ]
 
-const COMMANDS = new Set(['pause', 'resume', 'status'])
+const COMMANDS = new Set(['pause', 'resume', 'set-volume', 'status'])
 const LOCAL_PORTS = new Set(['3000', '5173'])
 
 function isAllowedSender(sender) {
@@ -19,21 +19,25 @@ function isAllowedSender(sender) {
   }
 }
 
-async function sendToProviderTab(tabId, command) {
+async function sendToProviderTab(tabId, command, volume) {
   try {
     return await browser.tabs.sendMessage(tabId, {
       type: 'audio-countdown-media-command',
       command,
+      volume,
     })
   } catch (_) {
     return null
   }
 }
 
-async function controlProviderTabs(command) {
+async function controlProviderTabs(command, volume) {
   const tabs = await browser.tabs.query({ url: PROVIDER_URLS })
-  const responses = await Promise.all(tabs.map(tab => sendToProviderTab(tab.id, command)))
+  const responses = await Promise.all(tabs.map(tab => sendToProviderTab(tab.id, command, volume)))
   const validResponses = responses.filter(response => response?.ok)
+  const volumeResponse = validResponses.find(response => response.resumableCount > 0 && Number.isFinite(response.volume))
+    ?? validResponses.find(response => response.playingCount > 0 && Number.isFinite(response.volume))
+    ?? validResponses.find(response => Number.isFinite(response.volume))
 
   return {
     ok: true,
@@ -42,15 +46,18 @@ async function controlProviderTabs(command) {
     affectedCount: validResponses.reduce((total, response) => total + response.affectedCount, 0),
     playingCount: validResponses.reduce((total, response) => total + response.playingCount, 0),
     resumableCount: validResponses.reduce((total, response) => total + response.resumableCount, 0),
+    volume: volumeResponse?.volume ?? null,
   }
 }
 
 browser.runtime.onMessage.addListener((message, sender) => {
   if (!isAllowedSender(sender)
       || message?.type !== 'audio-countdown-command'
-      || !COMMANDS.has(message.command)) {
+      || !COMMANDS.has(message.command)
+      || (message.command === 'set-volume'
+        && (!Number.isFinite(message.volume) || message.volume < 0 || message.volume > 1))) {
     return undefined
   }
 
-  return controlProviderTabs(message.command)
+  return controlProviderTabs(message.command, message.volume)
 })

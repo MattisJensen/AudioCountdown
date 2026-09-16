@@ -8,5 +8,5 @@ browser.runtime.onMessage.addListener(message => {
   const action = controller[message.command]
   if (typeof action !== 'function') return undefined
 
-  return Promise.resolve(action()).then(result => ({ ok: true, ...result }))
+  return Promise.resolve(action(message.volume)).then(result => ({ ok: true, ...result }))
 })

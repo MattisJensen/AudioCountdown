@@ -36,7 +36,7 @@ test('pauses only media that is currently playing', () => {
 
   assert.equal(playing.paused, true)
   assert.equal(alreadyPaused.paused, true)
-  assert.deepEqual(result, { affectedCount: 1, playingCount: 0, resumableCount: 1 })
+  assert.deepEqual(result, { affectedCount: 1, playingCount: 0, resumableCount: 1, volume: 0.7 })
 })
 
 test('resumes only media previously paused by the controller', async () => {
@@ -50,7 +50,7 @@ test('resumes only media previously paused by the controller', async () => {
   assert.equal(playing.paused, false)
   assert.equal(playing.volume, 0.45)
   assert.equal(alreadyPaused.paused, true)
-  assert.deepEqual(result, { affectedCount: 1, playingCount: 1, resumableCount: 0 })
+  assert.deepEqual(result, { affectedCount: 1, playingCount: 1, resumableCount: 0, volume: 0.45 })
 })
 
 test('does not take control again after the user resumes media manually', async () => {
@@ -61,7 +61,23 @@ test('does not take control again after the user resumes media manually', async 
 
   const result = await controller.resume()
 
-  assert.deepEqual(result, { affectedCount: 0, playingCount: 1, resumableCount: 0 })
+  assert.deepEqual(result, { affectedCount: 0, playingCount: 1, resumableCount: 0, volume: 0.7 })
+})
+
+test('applies volume changes to playing and resumable media', async () => {
+  const playing = mediaElement({ volume: 0.8 })
+  const paused = mediaElement({ playing: false, volume: 0.4 })
+  const controller = controllerFor([playing, paused])
+  controller.pause()
+
+  const result = controller['set-volume'](0.25)
+  await controller.resume()
+
+  assert.equal(playing.volume, 0.25)
+  assert.equal(paused.volume, 0.25)
+  assert.equal(playing.paused, false)
+  assert.equal(paused.paused, true)
+  assert.deepEqual(result, { affectedCount: 2, playingCount: 0, resumableCount: 1, volume: 0.25 })
 })
 
 test('preserves the original target volume when paused during a fade', async () => {

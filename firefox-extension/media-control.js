@@ -25,6 +25,19 @@
       }
     }
 
+    function currentVolume() {
+      purgeStaleMedia()
+      const savedState = pausedMedia.values().next().value
+      if (savedState && Number.isFinite(savedState.volume)) return savedState.volume
+
+      const media = mediaElements().find(isPlaying) ?? mediaElements()[0]
+      return Number.isFinite(media?.volume) ? media.volume : null
+    }
+
+    function state(affectedCount) {
+      return { affectedCount, ...counts(), volume: currentVolume() }
+    }
+
     function cancelFade(media) {
       const fade = activeFades.get(media)
       if (!fade) return null
@@ -48,7 +61,7 @@
         }
       }
 
-      return { affectedCount, ...counts() }
+      return state(affectedCount)
     }
 
     function fadeIn(media, targetVolume) {
@@ -107,13 +120,30 @@
       const results = await Promise.all(
         Array.from(pausedMedia.entries(), ([media, savedState]) => resumeOne(media, savedState)),
       )
-      return { affectedCount: results.filter(Boolean).length, ...counts() }
+      return state(results.filter(Boolean).length)
+    }
+
+    function setVolume(nextVolume) {
+      const volume = Math.min(1, Math.max(0, Number(nextVolume)))
+      let affectedCount = 0
+
+      for (const media of mediaElements()) {
+        try {
+          cancelFade(media)
+          media.volume = volume
+          affectedCount += 1
+        } catch (_) {}
+      }
+      for (const savedState of pausedMedia.values()) savedState.volume = volume
+
+      return state(affectedCount)
     }
 
     return {
       pause,
       resume,
-      status: () => ({ affectedCount: 0, ...counts() }),
+      'set-volume': setVolume,
+      status: () => state(0),
     }
   }
 

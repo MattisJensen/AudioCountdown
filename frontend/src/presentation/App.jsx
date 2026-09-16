@@ -9,8 +9,6 @@ import AudioPlayer from './AudioPlayer.jsx'
 import ExternalMediaControls from './ExternalMediaControls.jsx'
 import ThemeSwitcher from './ThemeSwitcher.jsx'
 
-const EXTERNAL_AUDIO_RESUME_DELAY_MS = 3000
-
 export default function App() {
   const [tracks, setTracks] = useState([])
   const [selectedTrack, setSelectedTrack] = useState('')
@@ -25,10 +23,7 @@ export default function App() {
   const [countdownVisible, setCountdownVisible] = useState(false)
   const showError = useCallback(message => setError(message), [])
   const externalMedia = useExternalMediaControl()
-  const resumeExternalMedia = useCallback(() => {
-    externalMedia.resumeAfter(EXTERNAL_AUDIO_RESUME_DELAY_MS)
-  }, [externalMedia.resumeAfter])
-  const player = useAudioPlayer(showError, resumeExternalMedia)
+  const player = useAudioPlayer(showError, externalMedia.resume)
   const secondsLeft = useCountdown(state)
   const { theme, setTheme } = useTheme()
 
@@ -204,9 +199,13 @@ export default function App() {
         availability={externalMedia.availability}
         providerTabCount={externalMedia.providerTabCount}
         resumableCount={externalMedia.resumableCount}
+        otherVolume={externalMedia.volume}
+        appVolume={player.volume}
         busy={externalMedia.busy}
         onPause={externalMedia.pause}
         onResume={externalMedia.resume}
+        onOtherVolumeChange={externalMedia.setVolume}
+        onAppVolumeChange={player.setVolume}
       />
       {player.trackId && <AudioPlayer
         trackName={playingTrack?.fileName}
