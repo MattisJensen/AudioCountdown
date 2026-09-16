@@ -1,4 +1,4 @@
-package com.audiocountdown.domain;
+package com.audiocountdown.core;
 
 import java.time.Instant;
 

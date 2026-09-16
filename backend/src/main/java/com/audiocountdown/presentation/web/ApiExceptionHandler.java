@@ -1,6 +1,8 @@
-package com.audiocountdown.adapter.in.web;
+package com.audiocountdown.presentation.web;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -33,6 +35,13 @@ public class ApiExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public Map<String, String> trackInUse(TrackInUseException error) {
         return Map.of("message", error.getMessage());
+    }
+
+    @ExceptionHandler(InvalidRangeException.class)
+    public ResponseEntity<Map<String, String>> invalidRange(InvalidRangeException error) {
+        return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                .header(HttpHeaders.CONTENT_RANGE, "bytes */" + error.fileSize())
+                .body(Map.of("message", error.getMessage()));
     }
 
 }

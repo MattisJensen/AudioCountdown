@@ -1,10 +1,10 @@
-package com.audiocountdown.adapter.out.storage;
+package com.audiocountdown.infrastructure.storage;
 
 import com.audiocountdown.application.TrackStorage;
-import com.audiocountdown.domain.Track;
+import com.audiocountdown.application.TrackUpload;
+import com.audiocountdown.core.Track;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,11 +38,11 @@ public class FileSystemTrackStorage implements TrackStorage {
     }
 
     @Override
-    public synchronized Track save(MultipartFile file) throws IOException {
-        if (file.isEmpty() || file.getSize() > maxFileSize) {
+    public synchronized Track save(TrackUpload upload) throws IOException {
+        if (upload.size() <= 0 || upload.size() > maxFileSize) {
             throw new IllegalArgumentException("The audio file must be non-empty and no larger than 20 MB.");
         }
-        String originalName = normalizedFileName(file.getOriginalFilename());
+        String originalName = normalizedFileName(upload.fileName());
         String extension = extensionOf(originalName);
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
             throw new IllegalArgumentException("Supported audio formats are MP3, WAV, M4A, OGG, AAC, and FLAC.");
@@ -50,8 +50,8 @@ public class FileSystemTrackStorage implements TrackStorage {
         String displayName = nextAvailableName(originalName, findAll());
         String id = UUID.randomUUID().toString();
         Path destination = contentPath(id, extension);
-        Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
-        Track track = new Track(id, displayName, contentTypeFor(extension), file.getSize());
+        Files.copy(upload.content(), destination, StandardCopyOption.REPLACE_EXISTING);
+        Track track = new Track(id, displayName, contentTypeFor(extension), upload.size());
         try {
             writeMetadata(track);
         } catch (IOException error) {
@@ -79,10 +79,17 @@ public class FileSystemTrackStorage implements TrackStorage {
     }
 
     @Override
-    public InputStream open(String id) throws IOException {
+    public InputStream open(String id, long offset) throws IOException {
         Track track = find(id);
         if (track == null) throw new java.nio.file.NoSuchFileException(id);
-        return Files.newInputStream(contentPath(track.id(), extensionOf(track.fileName())));
+        InputStream input = Files.newInputStream(contentPath(track.id(), extensionOf(track.fileName())));
+        try {
+            input.skipNBytes(offset);
+            return input;
+        } catch (IOException | RuntimeException error) {
+            input.close();
+            throw error;
+        }
     }
 
     @Override

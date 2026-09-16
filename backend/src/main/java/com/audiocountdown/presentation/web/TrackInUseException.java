@@ -1,4 +1,4 @@
-package com.audiocountdown.adapter.in.web;
+package com.audiocountdown.presentation.web;
 
 public class TrackInUseException extends RuntimeException {
     public TrackInUseException() {

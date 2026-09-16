@@ -1,8 +1,7 @@
 package com.audiocountdown.application;
 
-import com.audiocountdown.domain.TimerSnapshot;
-import com.audiocountdown.domain.TimerStatus;
-import org.springframework.stereotype.Service;
+import com.audiocountdown.core.TimerSnapshot;
+import com.audiocountdown.core.TimerStatus;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -10,13 +9,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Consumer;
-import jakarta.annotation.PreDestroy;
 
-@Service
-public class TimerService {
+public class TimerService implements AutoCloseable {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private final Consumer<String> completionListener;
+    private final TimerCompletionPublisher completionPublisher;
     private TimerStatus status = TimerStatus.IDLE;
     private int minimumMinutes = 15;
     private int maximumMinutes = 80;
@@ -26,8 +22,8 @@ public class TimerService {
     private String selectedTrackId;
     private ScheduledFuture<?> scheduledCompletion;
 
-    public TimerService(TimerEventPublisher eventPublisher) {
-        this.completionListener = eventPublisher::publishCompletion;
+    public TimerService(TimerCompletionPublisher completionPublisher) {
+        this.completionPublisher = completionPublisher;
     }
 
     public synchronized TimerSnapshot start(int minimum, int maximum, String trackId) {
@@ -89,8 +85,8 @@ public class TimerService {
                 completesAt, status == TimerStatus.PAUSED ? pausedSecondsLeft : null, selectedTrackId);
     }
 
-    @PreDestroy
-    void shutdown() {
+    @Override
+    public void close() {
         scheduler.shutdownNow();
     }
 
@@ -114,7 +110,7 @@ public class TimerService {
             completesAt = Instant.now().plusSeconds(pausedSecondsLeft);
             scheduleCompletion(pausedSecondsLeft);
         }
-        completionListener.accept(track);
+        completionPublisher.publish(track);
     }
 
     private void cancelSchedule() {

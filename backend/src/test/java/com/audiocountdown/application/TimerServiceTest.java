@@ -1,13 +1,13 @@
 package com.audiocountdown.application;
 
-import com.audiocountdown.domain.TimerStatus;
+import com.audiocountdown.core.TimerStatus;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TimerServiceTest {
-    private final TimerService service = new TimerService(new TimerEventPublisher());
+    private final TimerService service = new TimerService(trackId -> { });
 
     @Test
     void startsWithAnInclusiveWholeMinuteInTheRequestedRange() {

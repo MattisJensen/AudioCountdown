@@ -1,9 +1,10 @@
-package com.audiocountdown.adapter.out.storage;
+package com.audiocountdown.infrastructure.storage;
 
+import com.audiocountdown.application.TrackUpload;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +48,7 @@ class FileSystemTrackStorageTest {
 
         assertThat(renamed.fileName()).isEqualTo("first 1.mp3");
         assertThat(storage.find(second.id()).fileName()).isEqualTo("first 1.mp3");
-        assertThat(storage.open(first.id())).hasBinaryContent(new byte[]{1, 2, 3});
+        assertThat(storage.open(first.id(), 0)).hasBinaryContent(new byte[]{1, 2, 3});
     }
 
     @Test
@@ -61,7 +62,8 @@ class FileSystemTrackStorageTest {
         assertThat(storage.findAll()).isEmpty();
     }
 
-    private MockMultipartFile audio(String fileName) {
-        return new MockMultipartFile("file", fileName, "audio/mpeg", new byte[]{1, 2, 3});
+    private TrackUpload audio(String fileName) {
+        byte[] content = {1, 2, 3};
+        return new TrackUpload(fileName, content.length, new ByteArrayInputStream(content));
     }
 }

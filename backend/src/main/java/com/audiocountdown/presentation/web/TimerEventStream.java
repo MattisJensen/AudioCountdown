@@ -1,5 +1,6 @@
-package com.audiocountdown.application;
+package com.audiocountdown.presentation.web;
 
+import com.audiocountdown.application.TimerCompletionPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -8,7 +9,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 @Component
-public class TimerEventPublisher {
+public class TimerEventStream implements TimerCompletionPublisher {
     private final Set<SseEmitter> clients = new CopyOnWriteArraySet<>();
 
     public SseEmitter subscribe() {
@@ -25,7 +26,8 @@ public class TimerEventPublisher {
         return emitter;
     }
 
-    public void publishCompletion(String trackId) {
+    @Override
+    public void publish(String trackId) {
         clients.forEach(emitter -> {
             try {
                 emitter.send(SseEmitter.event().name("play-track").data(trackId == null ? "" : trackId));

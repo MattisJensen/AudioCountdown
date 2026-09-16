@@ -2,6 +2,19 @@
 
 A single-session random audio countdown with a Spring Boot API and a React frontend.
 
+The UI follows the system color theme by default. You can also select Light or Dark explicitly. The selected preference is kept in the browser.
+
+## Architecture
+
+The backend follows Clean Architecture dependency boundaries:
+
+- `core` contains framework-independent domain models.
+- `application` contains countdown behavior and storage/event ports.
+- `infrastructure` contains Spring configuration and filesystem persistence.
+- `presentation` contains HTTP controllers, validation, error mapping, and server-sent events.
+
+The frontend separates core formatting, application API/player/theme state, and presentation components. Audio content supports HTTP byte ranges so browsers can read duration metadata and seek without downloading the whole file.
+
 ## Run with Docker Compose
 
 ```bash
