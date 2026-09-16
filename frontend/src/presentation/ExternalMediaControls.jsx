@@ -40,7 +40,7 @@ export default function ExternalMediaControls({
         label="Other browser audio"
         value={otherVolume}
         onChange={onOtherVolumeChange}
-        disabled={!available || providerTabCount === 0}
+        disabled={!available}
       />
       <VolumeSlider label="Audio Countdown" value={appVolume} onChange={onAppVolumeChange} />
       <label className="fade-control">

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 const PAGE_MESSAGE_SOURCE = 'audio-countdown-page'
 const EXTENSION_MESSAGE_SOURCE = 'audio-countdown-extension'
 const PAUSE_TIMEOUT_MS = 750
+const PING_TIMEOUT_MS = 2000
 const RESPONSE_TIMEOUT_MS = 4000
 const FADE_DURATION_STORAGE_KEY = 'audio-countdown-external-fade-seconds'
 const DEFAULT_FADE_DURATION_SECONDS = 2
@@ -66,7 +67,6 @@ export function useExternalMediaControl() {
     const requestId = `${Date.now()}-${nextRequestId.current++}`
     const timeout = window.setTimeout(() => {
       pendingRequests.current.delete(requestId)
-      setAvailability('unavailable')
       resolve(null)
     }, timeoutMs)
 
@@ -137,8 +137,16 @@ export function useExternalMediaControl() {
 
   useEffect(() => {
     let active = true
-    sendCommand('status', {}, PAUSE_TIMEOUT_MS).then(response => {
-      if (active) updateState(response)
+    sendCommand('ping', {}, PING_TIMEOUT_MS).then(async response => {
+      if (!active) return
+      if (!response?.ok) {
+        setAvailability('unavailable')
+        return
+      }
+
+      setAvailability('available')
+      const status = await sendCommand('status')
+      if (active) updateState(status)
     })
     return () => {
       active = false
