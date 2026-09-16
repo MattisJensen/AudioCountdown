@@ -80,6 +80,23 @@ test('applies volume changes to playing and resumable media', async () => {
   assert.deepEqual(result, { affectedCount: 2, playingCount: 0, resumableCount: 1, volume: 0.25 })
 })
 
+test('accepts a per-resume fade duration', async () => {
+  const playing = mediaElement({ volume: 0.5 })
+  const frames = []
+  const controller = createMediaController({
+    findMedia: () => [playing],
+    fadeDurationMs: 1000,
+    requestFrame: callback => frames.push(callback),
+  })
+  controller.pause()
+
+  await controller.resume(0)
+
+  assert.equal(playing.paused, false)
+  assert.equal(playing.volume, 0.5)
+  assert.equal(frames.length, 0)
+})
+
 test('preserves the original target volume when paused during a fade', async () => {
   const playing = mediaElement({ volume: 0.6 })
   const frames = []

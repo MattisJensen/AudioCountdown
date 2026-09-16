@@ -201,11 +201,13 @@ export default function App() {
         resumableCount={externalMedia.resumableCount}
         otherVolume={externalMedia.volume}
         appVolume={player.volume}
+        fadeDurationSeconds={externalMedia.fadeDurationSeconds}
         busy={externalMedia.busy}
         onPause={externalMedia.pause}
         onResume={externalMedia.resume}
         onOtherVolumeChange={externalMedia.setVolume}
         onAppVolumeChange={player.setVolume}
+        onFadeDurationChange={externalMedia.setFadeDurationSeconds}
       />
       {player.trackId && <AudioPlayer
         trackName={playingTrack?.fileName}

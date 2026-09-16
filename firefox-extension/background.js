@@ -19,21 +19,22 @@ function isAllowedSender(sender) {
   }
 }
 
-async function sendToProviderTab(tabId, command, volume) {
+async function sendToProviderTab(tabId, command, volume, fadeDurationMs) {
   try {
     return await browser.tabs.sendMessage(tabId, {
       type: 'audio-countdown-media-command',
       command,
       volume,
+      fadeDurationMs,
     })
   } catch (_) {
     return null
   }
 }
 
-async function controlProviderTabs(command, volume) {
+async function controlProviderTabs(command, volume, fadeDurationMs) {
   const tabs = await browser.tabs.query({ url: PROVIDER_URLS })
-  const responses = await Promise.all(tabs.map(tab => sendToProviderTab(tab.id, command, volume)))
+  const responses = await Promise.all(tabs.map(tab => sendToProviderTab(tab.id, command, volume, fadeDurationMs)))
   const validResponses = responses.filter(response => response?.ok)
   const volumeResponse = validResponses.find(response => response.resumableCount > 0 && Number.isFinite(response.volume))
     ?? validResponses.find(response => response.playingCount > 0 && Number.isFinite(response.volume))
@@ -55,9 +56,13 @@ browser.runtime.onMessage.addListener((message, sender) => {
       || message?.type !== 'audio-countdown-command'
       || !COMMANDS.has(message.command)
       || (message.command === 'set-volume'
-        && (!Number.isFinite(message.volume) || message.volume < 0 || message.volume > 1))) {
+        && (!Number.isFinite(message.volume) || message.volume < 0 || message.volume > 1))
+      || (message.command === 'resume'
+        && (!Number.isFinite(message.fadeDurationMs)
+          || message.fadeDurationMs < 0
+          || message.fadeDurationMs > 60000))) {
     return undefined
   }
 
-  return controlProviderTabs(message.command, message.volume)
+  return controlProviderTabs(message.command, message.volume, message.fadeDurationMs)
 })

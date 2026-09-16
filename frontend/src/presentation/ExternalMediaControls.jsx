@@ -4,11 +4,13 @@ export default function ExternalMediaControls({
   resumableCount,
   otherVolume,
   appVolume,
+  fadeDurationSeconds,
   busy,
   onPause,
   onResume,
   onOtherVolumeChange,
   onAppVolumeChange,
+  onFadeDurationChange,
 }) {
   const available = availability === 'available'
   let status = 'Checking for the Firefox companion extension…'
@@ -41,6 +43,21 @@ export default function ExternalMediaControls({
         disabled={!available || providerTabCount === 0}
       />
       <VolumeSlider label="Audio Countdown" value={appVolume} onChange={onAppVolumeChange} />
+      <label className="fade-control">
+        <span><strong>Other audio fade-in</strong><small>0 disables fading</small></span>
+        <span className="fade-input-wrap">
+          <input
+            type="number"
+            min="0"
+            max="60"
+            step="0.5"
+            value={fadeDurationSeconds}
+            onChange={event => onFadeDurationChange(event.target.value)}
+            aria-label="Other audio fade-in duration"
+          />
+          <span>seconds</span>
+        </span>
+      </label>
     </div>
   </section>
 }

@@ -8,5 +8,6 @@ browser.runtime.onMessage.addListener(message => {
   const action = controller[message.command]
   if (typeof action !== 'function') return undefined
 
-  return Promise.resolve(action(message.volume)).then(result => ({ ok: true, ...result }))
+  const argument = message.command === 'set-volume' ? message.volume : message.fadeDurationMs
+  return Promise.resolve(action(argument)).then(result => ({ ok: true, ...result }))
 })

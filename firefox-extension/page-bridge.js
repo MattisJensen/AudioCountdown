@@ -17,6 +17,7 @@ window.addEventListener('message', async event => {
       type: 'audio-countdown-command',
       command: event.data.command,
       volume: event.data.volume,
+      fadeDurationMs: event.data.fadeDurationMs,
     })
   } catch (_) {
     response = { ok: false }

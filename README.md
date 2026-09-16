@@ -27,7 +27,7 @@ Supported formats: MP3, WAV, M4A, OGG, AAC, and FLAC. Audio uploads are limited 
 
 ## Firefox music control
 
-The optional Firefox companion extension can pause music in Apple Music, Spotify, YouTube, YouTube Music, and SoundCloud before the countdown track plays. It resumes only audio that it stopped as soon as the countdown track ends, with a two-second fade-in. The UI also provides manual stop and continue buttons, a shared volume control for supported music tabs, and a separate volume control for Audio Countdown.
+The optional Firefox companion extension can pause music in Apple Music, Spotify, YouTube, YouTube Music, and SoundCloud before the countdown track plays. It resumes only audio that it stopped as soon as the countdown track ends. The fade-in duration is configurable from 0 to 60 seconds and defaults to two seconds. The UI also provides manual stop and continue buttons, a shared volume control for supported music tabs, and a separate volume control for Audio Countdown.
 
 For local development:
 

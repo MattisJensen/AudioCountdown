@@ -3,7 +3,7 @@
     findMedia,
     requestFrame = callback => requestAnimationFrame(callback),
     now = () => performance.now(),
-    fadeDurationMs = 2000,
+    fadeDurationMs: defaultFadeDurationMs = 2000,
   }) {
     const pausedMedia = new Map()
     const activeFades = new Map()
@@ -64,7 +64,7 @@
       return state(affectedCount)
     }
 
-    function fadeIn(media, targetVolume) {
+    function fadeIn(media, targetVolume, fadeDurationMs) {
       if (fadeDurationMs <= 0 || media.muted || targetVolume <= 0) {
         media.volume = targetVolume
         return Promise.resolve()
@@ -95,7 +95,7 @@
       })
     }
 
-    async function resumeOne(media, savedState) {
+    async function resumeOne(media, savedState, fadeDurationMs) {
       if (!media.isConnected || !media.paused) {
         pausedMedia.delete(media)
         return false
@@ -107,7 +107,7 @@
       try {
         await Promise.resolve(media.play())
         pausedMedia.delete(media)
-        await fadeIn(media, targetVolume)
+        await fadeIn(media, targetVolume, fadeDurationMs)
         return true
       } catch (_) {
         media.volume = targetVolume
@@ -115,10 +115,13 @@
       }
     }
 
-    async function resume() {
+    async function resume(nextFadeDurationMs = defaultFadeDurationMs) {
       purgeStaleMedia()
+      const fadeDurationMs = Number.isFinite(nextFadeDurationMs)
+        ? Math.min(60000, Math.max(0, nextFadeDurationMs))
+        : defaultFadeDurationMs
       const results = await Promise.all(
-        Array.from(pausedMedia.entries(), ([media, savedState]) => resumeOne(media, savedState)),
+        Array.from(pausedMedia.entries(), ([media, savedState]) => resumeOne(media, savedState, fadeDurationMs)),
       )
       return state(results.filter(Boolean).length)
     }
