@@ -144,28 +144,29 @@ export default function App() {
   return <main>
     <section className="shell">
       <header className="header">
-        <div className="brand"><span className="brand-mark">◷</span><span>Audio Countdown</span></div>
+        <div className="brand">Audio Countdown</div>
         <ThemeSwitcher theme={theme} onChange={setTheme} />
       </header>
       <div className="grid">
         <section className="card timer-card">
           <div className="timer-heading">
             <div className="card-label">CURRENT COUNTDOWN</div>
-            {(running || paused) && <button
-              className="visibility-toggle"
+            <button
+              className={`visibility-toggle${running || paused ? '' : ' visibility-toggle-placeholder'}`}
               type="button"
               aria-expanded={countdownVisible}
               onClick={() => setCountdownVisible(visible => !visible)}
-            >{countdownVisible ? 'Hide countdown' : 'Show countdown'}</button>}
+              disabled={!running && !paused}
+            >{countdownVisible ? 'Hide countdown' : 'Show countdown'}</button>
           </div>
           <div className="countdown">
             {state.status === 'IDLE' && <span className="idle">Ready when you are</span>}
             {(running || paused) && !countdownVisible && <span className="idle">Countdown hidden</span>}
-            {(running || paused) && countdownVisible && <><strong>{formatTime(secondsLeft)}</strong><span>minutes : seconds</span></>}
+            {(running || paused) && countdownVisible && <strong>{formatTime(secondsLeft)}</strong>}
           </div>
           <p className="starting">
             {state.status === 'IDLE' && 'Choose a range, then press start'}
-            {(running || paused) && !countdownVisible && (paused ? 'The countdown is paused.' : 'Show it whenever you want to check the time.')}
+            {(running || paused) && !countdownVisible && paused && 'The countdown is paused.'}
             {(running || paused) && countdownVisible && `Counting down from ${state.startingMinutes} minutes`}
           </p>
           <div className="controls">

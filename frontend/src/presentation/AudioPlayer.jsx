@@ -22,6 +22,5 @@ export default function AudioPlayer({ trackName, isPlaying, currentTime, duratio
         disabled={!duration}
       />
     </div>
-    <div className="timer-independent">Timer continues independently</div>
   </section>
 }

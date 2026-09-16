@@ -78,7 +78,6 @@ main { min-height: 100vh; background: radial-gradient(circle at 85% 5%, var(--pa
 .shell { max-width: 940px; margin: auto; }
 .header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; letter-spacing: .02em; }
-.brand-mark { display: grid; place-items: center; width: 30px; height: 30px; color: #fff; background: var(--accent); border-radius: 10px; font-size: 20px; }
 .theme-switcher { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--border-soft); border-radius: 11px; background: var(--surface); }
 .theme-switcher button { border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 600; padding: 7px 10px; }
 .theme-switcher button.active { background: var(--accent-soft); color: var(--accent-text); }
@@ -88,6 +87,7 @@ main { min-height: 100vh; background: radial-gradient(circle at 85% 5%, var(--pa
 .timer-card { min-height: 350px; display: flex; flex-direction: column; }
 .timer-heading { align-items: center; display: flex; justify-content: space-between; gap: 16px; }
 .visibility-toggle { background: var(--accent-soft); color: var(--accent-text); font-size: 11px; padding: 7px 10px; }
+.visibility-toggle-placeholder { visibility: hidden; }
 .visibility-toggle:hover { background: color-mix(in srgb, var(--accent-soft) 75%, var(--accent)); }
 .countdown { margin: 54px 0 8px; display: flex; align-items: baseline; gap: 12px; }
 .countdown strong { font: 700 clamp(62px, 9vw, 96px)/.85 'Space Grotesk', sans-serif; letter-spacing: -.07em; color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -140,7 +140,6 @@ footer { color: var(--text-faint); font-size: 12px; margin-top: 22px; text-align
 .player-heading time { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
 input.player-progress { accent-color: var(--accent); cursor: pointer; height: 4px; margin: 12px 0 2px; padding: 0; }
 input.player-progress:disabled { cursor: default; }
-.timer-independent { background: var(--accent-soft); border-radius: 999px; color: var(--accent-text); font-size: 10px; font-weight: 600; padding: 7px 10px; white-space: nowrap; }
 
 @media (max-width: 720px) {
   main { padding: 24px 16px; }
@@ -150,7 +149,6 @@ input.player-progress:disabled { cursor: default; }
   .card { padding: 22px; }
   .countdown { margin-top: 45px; }
   .audio-player { grid-template-columns: auto minmax(0, 1fr); }
-  .timer-independent { display: none; }
 }
 
 @media (max-width: 460px) {
