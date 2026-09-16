@@ -34,6 +34,24 @@ function App() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const audio = useRef(new Audio())
 
+  const primeAudioPlayback = (trackId) => {
+    const player = audio.current
+    player.pause()
+    player.src = `${API}/tracks/${trackId}/content`
+    player.load()
+    player.muted = true
+
+    // Start the same media element from the Start button's user gesture. This
+    // lets browsers allow the later, countdown-triggered play with sound.
+    player.play()
+      .then(() => {
+        player.pause()
+        player.currentTime = 0
+      })
+      .catch(() => {})
+      .finally(() => { player.muted = false })
+  }
+
   const loadTracks = async () => {
     try {
       const nextTracks = await request('/tracks')
@@ -112,6 +130,7 @@ function App() {
 
   const start = async () => {
     setError('')
+    if (selectedTrack) primeAudioPlayback(selectedTrack)
     try {
       setState(await request('/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ minimumMinutes: Number(minimum), maximumMinutes: Number(maximum), trackId: selectedTrack }) }))
     } catch (err) { setError(err.message) }
