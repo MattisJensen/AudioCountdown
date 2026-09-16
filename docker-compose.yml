@@ -7,11 +7,35 @@ services:
       - audio-data:/data/audio
     ports:
       - "8080:8080"
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend/src
+        - action: rebuild
+          path: ./backend/pom.xml
+        - action: rebuild
+          path: ./backend/Dockerfile
   frontend:
     build: ./frontend
     depends_on:
       - backend
     ports:
       - "3000:80"
+    develop:
+      watch:
+        - action: rebuild
+          path: ./frontend/src
+        - action: rebuild
+          path: ./frontend/index.html
+        - action: rebuild
+          path: ./frontend/package.json
+        - action: rebuild
+          path: ./frontend/package-lock.json
+        - action: rebuild
+          path: ./frontend/vite.config.js
+        - action: rebuild
+          path: ./frontend/nginx.conf
+        - action: rebuild
+          path: ./frontend/Dockerfile
 volumes:
   audio-data:
