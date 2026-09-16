@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { API_BASE_URL, request } from '../application/api.js'
 import { useAudioPlayer } from '../application/useAudioPlayer.js'
+import { useCountdown } from '../application/useCountdown.js'
 import { useTheme } from '../application/useTheme.js'
+import { formatTime } from '../core/formatTime.js'
 import AudioPlayer from './AudioPlayer.jsx'
 import ThemeSwitcher from './ThemeSwitcher.jsx'
 
@@ -16,8 +18,10 @@ export default function App() {
   const [renaming, setRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [countdownVisible, setCountdownVisible] = useState(false)
   const showError = useCallback(message => setError(message), [])
   const player = useAudioPlayer(showError)
+  const secondsLeft = useCountdown(state)
   const { theme, setTheme } = useTheme()
 
   const loadTracks = async () => {
@@ -53,7 +57,11 @@ export default function App() {
 
   const action = async (path) => {
     setError('')
-    try { setState(await request(path, { method: 'POST' })) } catch (err) { setError(err.message) }
+    try {
+      const nextState = await request(path, { method: 'POST' })
+      setState(nextState)
+      if (nextState.status === 'IDLE') setCountdownVisible(false)
+    } catch (err) { setError(err.message) }
   }
 
   const changeSelectedTrack = async (nextTrackId) => {
@@ -75,7 +83,9 @@ export default function App() {
     setError('')
     if (selectedTrack) player.prime(selectedTrack)
     try {
-      setState(await request('/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ minimumMinutes: Number(minimum), maximumMinutes: Number(maximum), trackId: selectedTrack }) }))
+      const nextState = await request('/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ minimumMinutes: Number(minimum), maximumMinutes: Number(maximum), trackId: selectedTrack }) })
+      setState(nextState)
+      setCountdownVisible(false)
     } catch (err) { setError(err.message) }
   }
 
@@ -139,9 +149,25 @@ export default function App() {
       </header>
       <div className="grid">
         <section className="card timer-card">
-          <div className="card-label">CURRENT COUNTDOWN</div>
-          <div className="countdown">{state.status === 'IDLE' ? <span className="idle">Ready when you are</span> : <><strong>{state.displayedMinutesLeft}</strong><span>minutes left</span></>}</div>
-          <p className="starting">{state.startingMinutes ? `Counting down from ${state.startingMinutes} minutes` : 'Choose a range, then press start'}</p>
+          <div className="timer-heading">
+            <div className="card-label">CURRENT COUNTDOWN</div>
+            {(running || paused) && <button
+              className="visibility-toggle"
+              type="button"
+              aria-expanded={countdownVisible}
+              onClick={() => setCountdownVisible(visible => !visible)}
+            >{countdownVisible ? 'Hide countdown' : 'Show countdown'}</button>}
+          </div>
+          <div className="countdown">
+            {state.status === 'IDLE' && <span className="idle">Ready when you are</span>}
+            {(running || paused) && !countdownVisible && <span className="idle">Countdown hidden</span>}
+            {(running || paused) && countdownVisible && <><strong>{formatTime(secondsLeft)}</strong><span>minutes : seconds</span></>}
+          </div>
+          <p className="starting">
+            {state.status === 'IDLE' && 'Choose a range, then press start'}
+            {(running || paused) && !countdownVisible && (paused ? 'The countdown is paused.' : 'Show it whenever you want to check the time.')}
+            {(running || paused) && countdownVisible && `Counting down from ${state.startingMinutes} minutes`}
+          </p>
           <div className="controls">
             {state.status === 'IDLE' && <button className="primary" onClick={start} disabled={!selectedTrack}>Start</button>}
             {running && <button className="primary" onClick={() => action('/timer/pause')}>Pause</button>}
