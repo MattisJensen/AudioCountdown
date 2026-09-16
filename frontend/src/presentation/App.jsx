@@ -2,10 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { API_BASE_URL, request } from '../application/api.js'
 import { useAudioPlayer } from '../application/useAudioPlayer.js'
 import { useCountdown } from '../application/useCountdown.js'
+import { useExternalMediaControl } from '../application/useExternalMediaControl.js'
 import { useTheme } from '../application/useTheme.js'
 import { formatTime } from '../core/formatTime.js'
 import AudioPlayer from './AudioPlayer.jsx'
+import ExternalMediaControls from './ExternalMediaControls.jsx'
 import ThemeSwitcher from './ThemeSwitcher.jsx'
+
+const EXTERNAL_AUDIO_RESUME_DELAY_MS = 3000
 
 export default function App() {
   const [tracks, setTracks] = useState([])
@@ -20,7 +24,11 @@ export default function App() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [countdownVisible, setCountdownVisible] = useState(false)
   const showError = useCallback(message => setError(message), [])
-  const player = useAudioPlayer(showError)
+  const externalMedia = useExternalMediaControl()
+  const resumeExternalMedia = useCallback(() => {
+    externalMedia.resumeAfter(EXTERNAL_AUDIO_RESUME_DELAY_MS)
+  }, [externalMedia.resumeAfter])
+  const player = useAudioPlayer(showError, resumeExternalMedia)
   const secondsLeft = useCountdown(state)
   const { theme, setTheme } = useTheme()
 
@@ -44,8 +52,12 @@ export default function App() {
     loadTracks()
     loadState()
     const events = new EventSource(`${API_BASE_URL}/timer/events`)
-    events.addEventListener('play-track', (event) => {
-      if (event.data) player.playTrack(event.data)
+    events.addEventListener('play-track', async (event) => {
+      if (event.data) {
+        await externalMedia.pause()
+        const started = await player.playTrack(event.data)
+        if (!started) await externalMedia.resume()
+      }
       loadState()
     })
     const refresh = setInterval(loadState, 5000)
@@ -53,7 +65,7 @@ export default function App() {
       events.close()
       clearInterval(refresh)
     }
-  }, [player.playTrack])
+  }, [externalMedia.pause, externalMedia.resume, player.playTrack])
 
   const action = async (path) => {
     setError('')
@@ -188,6 +200,14 @@ export default function App() {
           <label className="upload"><span>{uploading ? 'Uploading…' : '+ Add another track'}</span><input type="file" accept="audio/mpeg,audio/wav,audio/mp4,audio/ogg,audio/aac,audio/flac,.mp3,.wav,.m4a,.ogg,.aac,.flac" onChange={upload} disabled={uploading}/></label>
         </section>
       </div>
+      <ExternalMediaControls
+        availability={externalMedia.availability}
+        providerTabCount={externalMedia.providerTabCount}
+        resumableCount={externalMedia.resumableCount}
+        busy={externalMedia.busy}
+        onPause={externalMedia.pause}
+        onResume={externalMedia.resume}
+      />
       {player.trackId && <AudioPlayer
         trackName={playingTrack?.fileName}
         isPlaying={player.isPlaying}

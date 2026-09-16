@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { trackContentUrl } from './api.js'
 
-export function useAudioPlayer(onError) {
+export function useAudioPlayer(onError, onEnded) {
   const playerRef = useRef(null)
+  const onEndedRef = useRef(onEnded)
+  onEndedRef.current = onEnded
   if (playerRef.current === null) {
     playerRef.current = new Audio()
     playerRef.current.preload = 'metadata'
@@ -22,6 +24,7 @@ export function useAudioPlayer(onError) {
     const markEnded = () => {
       setIsPlaying(false)
       setCurrentTime(Number.isFinite(player.duration) ? player.duration : 0)
+      onEndedRef.current?.()
     }
     player.addEventListener('timeupdate', updateTime)
     player.addEventListener('loadedmetadata', updateDuration)
@@ -63,14 +66,20 @@ export function useAudioPlayer(onError) {
       .finally(() => { player.muted = false })
   }, [useSource])
 
-  const playTrack = useCallback((nextTrackId) => {
+  const playTrack = useCallback(async (nextTrackId) => {
     const player = playerRef.current
     const sourceChanged = useSource(nextTrackId)
     player.currentTime = 0
     setTrackId(nextTrackId)
     setCurrentTime(0)
     setDuration(sourceChanged ? 0 : (Number.isFinite(player.duration) ? player.duration : 0))
-    player.play().catch(() => onError('The browser blocked audio playback. Use the player to start the audio.'))
+    try {
+      await player.play()
+      return true
+    } catch (_) {
+      onError('The browser blocked audio playback. Use the player to start the audio.')
+      return false
+    }
   }, [onError, useSource])
 
   const toggle = useCallback(() => {
