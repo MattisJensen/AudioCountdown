@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Audio Countdown Media Control",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Lets Audio Countdown pause and resume supported web music players.",
   "browser_specific_settings": {
     "gecko": {
@@ -36,7 +36,7 @@
         "https://*.youtube.com/*",
         "https://soundcloud.com/*"
       ],
-      "js": ["media-control.js", "media-content.js"],
+      "js": ["media-control.js", "spotify-control.js", "media-content.js"],
       "run_at": "document_idle"
     }
   ]
